@@ -7,62 +7,73 @@ const finalMessage = document.getElementById("final-message");
 const finalMessageRevealWord = document.getElementById(
   "final-message-reveal-word"
 );
+const definition = document.getElementById("definiton");
+const hint = document.getElementById("hint");
+// const easyBtn = document.getElementById("easy");
 
 const figureParts = document.querySelectorAll(".figure-part");
 
+let gameMode = "easy";
+
+let words = [];
+// let easy = ["dog", "cat", "house", "lake", "soda", "keyboard", "computer"];
+let def = [];
+
 let playable = true;
 
-const words = [];
+const correctLetters = [];
+const wrongLetters = [];
 
 async function getRandomWord() {
   const res = await fetch(`https://random-words-api.vercel.app/word`);
   // console.log(res);
   const data = await res.json();
-  words.push(data[0].word.toLowerCase());
-  // console.log(words);
-  selectedWords();
-}
-
-function selectedWords() {
-  let selectedWord = words[Math.floor(Math.random() * words.length)];
-  if (!isValid(selectedWord)) {
-    console.log("Invalid Word");
+  console.log(data[0].definition);
+  const word = data[0].word.toLowerCase();
+  if (!isValid(word)) {
+    // console.log("Invalid Word");
     getRandomWord();
   }
-  console.log(selectedWord);
-  displayWord(selectedWord);
+  def.push(data[0].definition);
+  words.push(word);
+
+  console.log(words);
+  displayWord();
 }
 
 function isValid(str) {
   return !/[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g.test(str);
 }
 
-const correctLetters = [];
-console.log(correctLetters);
-const wrongLetters = [];
+function displayWord() {
+  console.log(words[0]);
+  wordEl.innerHTML = `
+    ${words[0]
+      .split("")
+      .map(
+        (letter) => `
+          <span class="letter">
+            ${correctLetters.includes(letter) ? letter : ""}
+          </span>
+        `
+      )
+      .join("")}
+  `;
 
-function displayWord(selectedWord) {
-  console.log(selectedWord);
-  wordEl.innerHTML = `${selectedWord
-    .split("")
-    .map(
-      (letter) =>
-        `<span class="letter">${
-          correctLetters.includes(letter) ? letter : ""
-        }</span>`
-    )
-    .join("")}`;
+  const innerWord = wordEl.innerText.replace(/[ \n]/g, "");
 
-  const innerWord = wordEl.innerText.replace(/\n/g, "");
-  if (innerWord === selectedWord) {
-    finalMessage.innerText = "Congrats! You Won!!";
+  if (innerWord === words[0]) {
+    finalMessage.innerText = "Congratulations! You won! 😃";
     popup.style.display = "flex";
 
     playable = false;
   }
+  def.forEach((i) => {
+    definition.innerHTML = i;
+  });
 }
 
-// Update wrong letters
+// Update the wrong letters
 function updateWrongLettersEl() {
   // Display wrong letters
   wrongLettersEl.innerHTML = `
@@ -70,7 +81,7 @@ function updateWrongLettersEl() {
     ${wrongLetters.map((letter) => `<span>${letter}</span>`)}
   `;
 
-  // Displays parts
+  // Display parts
   figureParts.forEach((part, index) => {
     const errors = wrongLetters.length;
 
@@ -80,9 +91,11 @@ function updateWrongLettersEl() {
       part.style.display = "none";
     }
   });
+
   // Check if lost
   if (wrongLetters.length === figureParts.length) {
-    finalMessage.innerText = "Unfortunately you lost";
+    finalMessage.innerText = "Unfortunately you lost. 😕";
+    finalMessageRevealWord.innerText = `...the word was: ${words[0]}`;
     popup.style.display = "flex";
 
     playable = false;
@@ -98,19 +111,17 @@ function showNotification() {
   }, 2000);
 }
 
-// Keydown event listener
+// Keydown letter press
 window.addEventListener("keydown", (e) => {
-  console.log(e.keyCode);
-  let selectedWord = words[Math.floor(Math.random() * words.length)];
-  console.log(selectedWord);
   if (playable) {
     if (e.keyCode >= 65 && e.keyCode <= 90) {
-      const letter = e.key;
-      if (selectedWord.includes(letter)) {
+      const letter = e.key.toLowerCase();
+
+      if (words[0].includes(letter)) {
         if (!correctLetters.includes(letter)) {
           correctLetters.push(letter);
 
-          displayWord(selectedWord);
+          displayWord();
         } else {
           showNotification();
         }
@@ -127,18 +138,28 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// Hint event
+hint.addEventListener("click", () => {
+  console.log("click");
+  if (definiton.style.display === "none") {
+    definiton.style.display = "block";
+    hint.style.display = "none";
+  } else {
+    definiton.style.display = "none";
+  }
+});
+
 // Restart game and play again
 playAgainBtn.addEventListener("click", () => {
   playable = true;
 
   //  Empty arrays
+  definiton.style.display = "none";
+  hint.style.display = "block";
   correctLetters.splice(0);
   wrongLetters.splice(0);
-
-  selectedWord = words[Math.floor(Math.random() * words.length)];
-
+  words = [];
   getRandomWord();
-  // displayWord(selectedWord);
 
   updateWrongLettersEl();
 
